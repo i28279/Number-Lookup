@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GajarBotol BD Number Lookup</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+  }
+  h2 {
+    text-align: center;
+    color: #333;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover {
+    background: #45a049;
+  }
+  .result {
+    margin-top: 20px;
+    padding: 15px;
+    background: #e8f5e9;
+    border-left: 6px solid #4caf50;
+    border-radius: 6px;
+  }
+  .result p {
+    margin: 5px 0;
+    font-size: 15px;
+  }
+  .error {
+    background: #fdecea;
+    border-left: 6px solid #f44336;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 20px;
+    color: #b71c1c;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>BD Number Lookup</h2>
+  <input id="num" type="text" placeholder="01701234567">
+  <button id="btn">Lookup</button>
+  <div id="output"></div>
+</div>
+
+<script>
+const btn = document.getElementById('btn');
+const output = document.getElementById('output');
+const apiKey = 'GAJARBOTOL-17047393c39f994c55a9aeca09abb48928bbc0f99118c4dc';
+const googleSheetAPI = 'https://script.google.com/macros/s/AKfycbzspwXF1lPCz3Rh8bRZHs2JRh1_MEJEDr_LT6Atq7c528yg58mDg0PDdU3KKpC8Dwa2/exec';
+
+btn.addEventListener('click', async () => {
+  const num = document.getElementById('num').value.trim();
+  if(!/^0?1[3-9]\d{8}$/.test(num)){
+    output.innerHTML = '<div class="error">দয়া করে সঠিক 11-সংখ্যার বাংলাদেশি মোবাইল নম্বর লিখুন।</div>';
+    return;
+  }
+  output.innerHTML = '<p>Loading...</p>';
+
+  try {
+    const url = `https://www.gajarbotol.site/Lookup/lookup.php?key=${apiKey}&number=${encodeURIComponent(num)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data.success){
+      output.innerHTML = `
+        <div class="result">
+          <p><strong>Name:</strong> ${data.name}</p>
+          <p><strong>Number:</strong> ${data.number}</p>
+        </div>
+      `;
+
+      // Google Sheet Save + Debug
+      fetch(googleSheetAPI, {
+        method: 'POST',
+        body: JSON.stringify({ phone: data.number, name: data.name }),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => res.json())
+      .then(res => {
+        console.log('Sheet Response:', res); // Browser console-এ দেখাবে
+        if(res.ok){
+          output.innerHTML += `<p style="color:green;">Saved to Google Sheet ✅</p>`;
+        } else {
+          output.innerHTML += `<p style="color:red;">Sheet Error: ${res.error}</p>`;
+        }
+      })
+      .catch(err => {
+        console.error('Fetch Error:', err);
+        output.innerHTML += `<p style="color:red;">Fetch Error: ${err.message}</p>`;
+      });
+
+    } else {
+      output.innerHTML = '<div class="error">Number not found.</div>';
+    }
+
+  } catch(err) {
+    output.innerHTML = '<div class="error">Error: '+ err.message +'</div>';
+  }
+});
+</script>
+
+</body>
+</html>
